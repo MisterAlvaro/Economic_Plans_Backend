@@ -1,0 +1,86 @@
+# Manual de API - Economic Plans Backend
+
+## Autenticación
+- **Login:**
+  - `POST /api/auth/login`
+  - Body: `{ "email": "user@example.com", "password": "..." }`
+  - Respuesta: `{ token, refreshToken }` (token en cookie)
+
+- **Refresh Token:**
+  - `POST /api/auth/refresh`
+  - Body: `{ "refreshToken": "..." }`
+
+- **Logout:**
+  - `POST /api/auth/logout`
+
+## Usuarios
+- **Crear usuario:**
+  - `POST /api/users`
+  - Body: `{ email, fullName, password, divisionId, role }`
+- **Listar usuarios:**
+  - `GET /api/users`
+- **Obtener usuario por id:**
+  - `GET /api/users/{id}`
+
+## Divisiones
+- **Crear división:**
+  - `POST /api/divisions`
+  - Body: `{ name, code }`
+- **Listar divisiones:**
+  - `GET /api/divisions`
+
+## Planes Económicos
+- **Crear plan:**
+  - `POST /api/plans`
+  - Body: `{ divisionId, year, createdBy }`
+- **Listar planes:**
+  - `GET /api/plans`
+- **Obtener plan por id:**
+  - `GET /api/plans/{id}`
+- **Actualizar estado:**
+  - `PUT /api/plans/{id}/status`
+  - Body: `{ status: "draft" | "reviewed" | "approved" }`
+- **Eliminar plan:**
+  - `DELETE /api/plans/{id}`
+
+## Hojas de Plan
+- **Listar hojas de un plan:**
+  - `GET /api/plans/{planId}/sheets`
+
+## Subida de Excel
+- **Subir Excel a un plan:**
+  - `POST /api/plans/{planId}/upload`
+  - Content-Type: `multipart/form-data`
+  - Campo: `file` (archivo Excel)
+  - Respuesta: `{ message, planId, sheetsProcessed }`
+
+## Fórmulas
+- **Listar celdas con fórmulas de una hoja:**
+  - `GET /api/sheets/{sheetId}/formula-cells`
+
+## Indicadores Económicos
+- **Listar indicadores:**
+  - `GET /api/indicators`
+- **Crear indicador:**
+  - `POST /api/indicators`
+  - Body: `{ name, code, unit, description, formulaTemplate }`
+  - Si el código ya existe, responde 409 con mensaje claro.
+
+## Ejemplo de manejo de errores
+- Respuesta de error estándar:
+  ```json
+  { "message": "Descripción del error" }
+  ```
+- Ejemplo de error por duplicado:
+  ```json
+  { "message": "Ya existe un indicador con el código 'IPC'." }
+  ```
+
+## Notas
+- Todos los endpoints protegidos requieren autenticación (token en cookie).
+- La subida de Excel extrae automáticamente los indicadores de la hoja "Resumen".
+- Los endpoints devuelven datos en formato JSON.
+
+---
+
+Para más detalles, consulta el archivo `requests.http` o pregunta por ejemplos específicos de uso.
