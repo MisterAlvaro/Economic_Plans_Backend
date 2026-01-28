@@ -10,7 +10,7 @@
     "migration:generate": "typeorm migration:generate src/migration/",
     "migration:run": "typeorm migration:run -d src/data-source-cli.ts",
     "migration:revert": "typeorm migration:revert -d src/data-source-cli.ts",
-    "seed:formula-cells": "ts-node src/seed/seedFormulaCellsToSupabase.ts"
+    "full:migration": "ts-node src/fullMigration.ts"
   },
   "keywords": [],
   "author": "",
