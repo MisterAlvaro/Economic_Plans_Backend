@@ -5,10 +5,9 @@ import { EconomicPlan } from '../entity/EconomicPlans';
 import { Division } from '../entity/Division';
 import { User } from '../entity/User';
 import { ExcelProcessor } from '../services/ExcelProcessor';
-import fs from 'fs';
 
 interface FileUploadRequest extends Request {
-  file?: Express.Multer.File;
+  file?: Express.Multer.File & { buffer?: Buffer };
 }
 
 export class PlanController {
@@ -73,11 +72,11 @@ export class PlanController {
     }
 
     try {
-      const fileBuffer = fs.readFileSync(req.file.path);
+      const fileBuffer = req.file.buffer;
+      if (!fileBuffer || !fileBuffer.length) {
+        return res.status(400).json({ message: 'No file uploaded or empty file' });
+      }
       await ExcelProcessor.process(fileBuffer, planId);
-      
-      // Clean up uploaded file
-      fs.unlinkSync(req.file.path);
       
       res.json({ 
         message: 'Excel processed successfully',
@@ -85,11 +84,6 @@ export class PlanController {
         sheetsProcessed: true
       });
     } catch (error) {
-      // Clean up uploaded file on error
-      if (req.file && fs.existsSync(req.file.path)) {
-        fs.unlinkSync(req.file.path);
-      }
-      
       console.error('Error processing Excel:', error);
       
       // Manejo específico de errores

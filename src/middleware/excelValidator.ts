@@ -1,7 +1,6 @@
 // src/middleware/excelValidator.ts
 import { Request, Response, NextFunction } from 'express';
 import * as XLSX from 'xlsx';
-import fs from 'fs';
 
 const EXPECTED_HEADERS: Record<string, string[]> = {
   'Resumen': ['Indicadores', 'UM', 'Real 2023', 'Real. 2024', 'Plan 2025', '∑(Ene-Dic)', 'Trim I', 'Trim II', 'Trim III', 'Trim IV'],
@@ -12,15 +11,16 @@ const EXPECTED_HEADERS: Record<string, string[]> = {
 export function validateExcelUpload(req: Request, res: Response, next: NextFunction) {
   const file = req.file;
   if (!file) return res.status(400).json({ message: 'Excel file is required' });
+  const buffer = (file as Express.Multer.File & { buffer?: Buffer }).buffer ?? Buffer.from([]);
+  if (!buffer.length) return res.status(400).json({ message: 'Excel file is required (no buffer)' });
 
   try {
-    const workbook = XLSX.readFile(file.path);
+    const workbook = XLSX.read(buffer, { type: 'buffer' });
     const sheetNames = Object.keys(EXPECTED_HEADERS);
 
     for (const sheet of sheetNames) {
       const worksheet = workbook.Sheets[sheet];
       if (!worksheet) {
-        fs.unlinkSync(file.path);
         return res.status(400).json({ message: `Missing required sheet: ${sheet}` });
       }
 
@@ -46,7 +46,6 @@ export function validateExcelUpload(req: Request, res: Response, next: NextFunct
       }
       
       if (!headerRow) {
-        fs.unlinkSync(file.path);
         return res.status(400).json({
           message: `Sheet "${sheet}" does not contain expected headers in first 10 rows`,
           expected: EXPECTED_HEADERS[sheet],
@@ -119,7 +118,6 @@ export function validateExcelUpload(req: Request, res: Response, next: NextFunct
             const cleanValue = String(value).replace(/,/g, '').trim();
             if (isNaN(Number(cleanValue))) {
               console.log(`ERROR en fila ${rowIndex + 5}: valor no numérico="${value}", limpio="${cleanValue}"`);
-              fs.unlinkSync(file.path);
               return res.status(400).json({
                 message: `Non-numeric value found in sheet "${sheet}" at row ${rowIndex + 5}`,
                 value: value
@@ -137,14 +135,12 @@ export function validateExcelUpload(req: Request, res: Response, next: NextFunct
             const numericValue = Number(cleanValue);
             
             if (isNaN(numericValue) || numericValue < 0) {
-              fs.unlinkSync(file.path);
               return res.status(400).json({
                 message: `"Plan 2025" value must be a non-negative number in sheet "${sheet}" at row ${rowIndex + 5}`,
                 value: planValue
               });
             }
           } else {
-            fs.unlinkSync(file.path);
             return res.status(400).json({
               message: `"Plan 2025" value must be a number in sheet "${sheet}" at row ${rowIndex + 5}`,
               value: planValue
@@ -163,7 +159,6 @@ export function validateExcelUpload(req: Request, res: Response, next: NextFunct
           const reportedSum = parseFloat(cleanReportedSum) || 0;
           const diff = Math.abs(monthSum - reportedSum);
           if (diff > 1e-2) {
-            fs.unlinkSync(file.path);
             return res.status(400).json({
               message: `Sum mismatch in "${sheet}" at row ${rowIndex + 5}. Expected ∑(Ene-Dic) ≈ ${monthSum}, found ${reportedSum}`
             });
@@ -174,7 +169,6 @@ export function validateExcelUpload(req: Request, res: Response, next: NextFunct
 
     next();
   } catch (error) {
-    if (file && fs.existsSync(file.path)) fs.unlinkSync(file.path);
     return res.status(400).json({ message: 'Invalid Excel file format' });
   }
 } 

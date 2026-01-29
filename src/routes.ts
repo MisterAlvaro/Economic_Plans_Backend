@@ -11,7 +11,8 @@ import { authenticateJWT } from './middleware/authMiddleware';
 import { AuthController } from './controller/AuthController';
 import { validateExcelUpload } from './middleware/excelValidator';
 
-const upload = multer({ dest: 'uploads/' });
+// memoryStorage: sin disco (Vercel tiene FS de solo lectura). Funciona también en local.
+const upload = multer({ storage: multer.memoryStorage() });
 const router = Router();
 
 // Public

@@ -8,7 +8,7 @@ import routes from './routes';
 import { InitializationService } from './services/InitializationService';
 
 const app = express();
-const PORT = 3001;
+const PORT = Number(process.env.PORT) || 3001;
 
 app.use(cors({
   origin: true, // Permite cualquier origen en desarrollo
