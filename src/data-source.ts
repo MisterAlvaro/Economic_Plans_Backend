@@ -1,6 +1,7 @@
 import 'reflect-metadata';
 import { DataSource } from 'typeorm';
 import * as dotenv from 'dotenv';
+import * as path from 'path';
 
 // Carga variables de entorno (útil en desarrollo y en ejecución local)
 dotenv.config();
@@ -15,6 +16,15 @@ try {
   config = {};
 }
 
+const isDist = __dirname.includes(path.sep + 'dist' + path.sep) || __dirname.endsWith(path.sep + 'dist');
+const entities = config.entities || (isDist
+  ? [path.join(__dirname, 'entity', '**', '*.js')]
+  : ['src/entity/**/*.ts']);
+const migrations = config.migrations || (isDist
+  ? [path.join(__dirname, 'migration', '**', '*.js')]
+  : ['src/migration/**/*.ts']);
+const subscribers = config.subscribers || (isDist ? [] : ['src/subscriber/**/*.ts']);
+
 export const AppDataSource = new DataSource({
   type: 'postgres',
   host: process.env.DB_HOST || config.host || 'localhost',
@@ -24,7 +34,7 @@ export const AppDataSource = new DataSource({
   database: process.env.DB_DATABASE || config.database,
   synchronize: (process.env.DB_SYNCHRONIZE ?? String(config.synchronize)) === 'true',
   logging: (process.env.DB_LOGGING ?? String(config.logging)) === 'true',
-  entities: config.entities || ['src/entity/**/*.ts'],
-  migrations: config.migrations || ['src/migration/**/*.ts'],
-  subscribers: config.subscribers || ['src/subscriber/**/*.ts'],
+  entities,
+  migrations,
+  subscribers,
 });

@@ -1,32 +1,20 @@
-// src/index.ts
+// src/index.ts – arranque local (DB + listen)
 import 'reflect-metadata';
-import express from 'express';
-import cors from 'cors';
-import cookieParser from 'cookie-parser';
+import * as dotenv from 'dotenv';
 import { AppDataSource } from './data-source';
-import routes from './routes';
 import { InitializationService } from './services/InitializationService';
+import app from './app';
 
-const app = express();
+dotenv.config();
+
 const PORT = Number(process.env.PORT) || 3001;
 
-app.use(cors({
-  origin: true, // Permite cualquier origen en desarrollo
-  credentials: true
-}));
-app.use(cookieParser());
-app.use(express.json());
-
-// API routes
-app.use('/api', routes);
-
-AppDataSource.initialize().then(async () => {
-  console.log('Connected to database');
-  
-  // Inicializar datos por defecto
-  await InitializationService.initializeDefaultData();
-  
-  app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-  });
-}).catch(error => console.log(error));
+AppDataSource.initialize()
+  .then(async () => {
+    console.log('Connected to database');
+    await InitializationService.initializeDefaultData();
+    app.listen(PORT, () => {
+      console.log(`Server running on http://localhost:${PORT}`);
+    });
+  })
+  .catch((error) => console.error(error));
