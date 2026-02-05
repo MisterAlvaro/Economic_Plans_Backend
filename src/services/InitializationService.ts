@@ -35,9 +35,18 @@ export class InitializationService {
       });
 
       if (!existingDivision) {
-        const division = divisionRepository.create(divisionData);
-        await divisionRepository.save(division);
-        console.log(`📁 División creada: ${divisionData.name}`);
+        try {
+          const division = divisionRepository.create(divisionData);
+          await divisionRepository.save(division);
+          console.log(`📁 División creada: ${divisionData.name}`);
+        } catch (err: any) {
+          // 23505 = duplicate key (PostgreSQL). Ya existe por race o datos previos.
+          if (err?.code === '23505') {
+            console.log(`📁 División ya existe (ignorando duplicado): ${divisionData.name}`);
+          } else {
+            throw err;
+          }
+        }
       } else {
         console.log(`📁 División ya existe: ${divisionData.name}`);
       }
