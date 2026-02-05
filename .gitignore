@@ -5,36 +5,41 @@ node_modules/
 dist/
 build/
 
-# Environment
+# Environment (nunca subir secretos)
 .env
 .env.local
 .env.*.local
+.env.development
+.env.production
 
 # Logs
+logs/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Editor directories and files
+# Editor / IDE
 .vscode/
 .idea/
+.cursorignore
+*.code-workspace
 .DS_Store
 
 # TypeScript
 *.tsbuildinfo
 
+# Uploads (generados en runtime)
+uploads/
+
 # Optional: coverage
 coverage/
 
-# lock files (if you want to ignore any lock files, uncomment)
+# Lock files (opcional: descomenta si no quieres subir)
 # package-lock.json
-# yarn.lock
-
-# Mac
-.DS_Store
 
 # Temporary
 *.tmp
+*.temp
 
 # Misc
 debug.log
