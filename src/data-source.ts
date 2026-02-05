@@ -2,6 +2,14 @@ import 'reflect-metadata';
 import { DataSource } from 'typeorm';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
+import { Division } from './entity/Division';
+import { EconomicIndicator } from './entity/EconomicIndicator';
+import { EconomicPlan } from './entity/EconomicPlans';
+import { FormulaCell } from './entity/FormulaCell';
+import { PlanAuditLog } from './entity/PlanAuditLog';
+import { PlanSheet } from './entity/PlanSheets';
+import { RevokedToken } from './entity/RevokedToken';
+import { User } from './entity/User';
 
 // Carga variables de entorno (útil en desarrollo y en ejecución local)
 dotenv.config();
@@ -16,10 +24,19 @@ try {
   config = {};
 }
 
+// Entidades explícitas (evita fallos de glob en Vercel/serverless)
+const entities = [
+  Division,
+  EconomicIndicator,
+  EconomicPlan,
+  FormulaCell,
+  PlanAuditLog,
+  PlanSheet,
+  RevokedToken,
+  User,
+];
+
 const isDist = __dirname.includes(path.sep + 'dist' + path.sep) || __dirname.endsWith(path.sep + 'dist');
-const entities = config.entities || (isDist
-  ? [path.join(__dirname, 'entity', '**', '*.js')]
-  : ['src/entity/**/*.ts']);
 const migrations = config.migrations || (isDist
   ? [path.join(__dirname, 'migration', '**', '*.js')]
   : ['src/migration/**/*.ts']);
