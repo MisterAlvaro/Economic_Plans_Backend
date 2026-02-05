@@ -1,11 +1,14 @@
 'use strict';
 
+const path = require('path');
+
 require('reflect-metadata');
 require('dotenv').config();
 
-const { AppDataSource } = require('../dist/data-source');
-const { InitializationService } = require('../dist/services/InitializationService');
-const app = require('../dist/app').default;
+const distDir = path.join(process.cwd(), 'dist');
+const { AppDataSource } = require(path.join(distDir, 'data-source'));
+const { InitializationService } = require(path.join(distDir, 'services', 'InitializationService'));
+const app = require(path.join(distDir, 'app')).default;
 const serverless = require('serverless-http');
 
 let initPromise = null;
