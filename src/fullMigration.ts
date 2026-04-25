@@ -32,16 +32,28 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash VARCHAR(255) NOT NULL,
   full_name VARCHAR(100) NOT NULL,
   division_id INTEGER REFERENCES divisions(id) ON DELETE CASCADE,
-  role VARCHAR(20) NOT NULL CHECK (role IN ('admin', 'economist', 'reviewer')),
+  role VARCHAR(20) NOT NULL CHECK (role IN ('admin', 'economist')),
   is_active BOOLEAN DEFAULT TRUE,
   last_login TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 3. Planes Económicos
+-- 3. Plan Maestro anual
+CREATE TABLE IF NOT EXISTS master_plans (
+  id SERIAL PRIMARY KEY,
+  year INTEGER UNIQUE NOT NULL CHECK (year BETWEEN 2000 AND 2100),
+  status VARCHAR(20) NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'active')),
+  file_name VARCHAR(255),
+  created_by INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE
+);
+
+-- 4. Planes Económicos
 CREATE TABLE IF NOT EXISTS economic_plans (
   id SERIAL PRIMARY KEY,
   division_id INTEGER NOT NULL REFERENCES divisions(id) ON DELETE CASCADE,
+  master_plan_id INTEGER NOT NULL REFERENCES master_plans(id) ON DELETE RESTRICT,
   year INTEGER NOT NULL CHECK (year BETWEEN 2000 AND 2100),
   version INTEGER DEFAULT 1,
   status VARCHAR(20) CHECK (status IN ('draft', 'reviewed', 'approved')),
@@ -53,7 +65,16 @@ CREATE TABLE IF NOT EXISTS economic_plans (
   UNIQUE(division_id, year)
 );
 
--- 4. Hojas de Planes
+-- 5. Hojas del Plan Maestro
+CREATE TABLE IF NOT EXISTS master_plan_sheets (
+  id SERIAL PRIMARY KEY,
+  master_plan_id INTEGER NOT NULL REFERENCES master_plans(id) ON DELETE CASCADE,
+  sheet_name VARCHAR(50) NOT NULL,
+  data JSONB NOT NULL,
+  UNIQUE(master_plan_id, sheet_name)
+);
+
+-- 6. Hojas de Planes
 CREATE TABLE IF NOT EXISTS plan_sheets (
   id SERIAL PRIMARY KEY,
   plan_id INTEGER NOT NULL REFERENCES economic_plans(id) ON DELETE CASCADE,
@@ -73,7 +94,18 @@ CREATE TABLE IF NOT EXISTS formula_cells (
   last_calculated_at TIMESTAMP WITH TIME ZONE
 );
 
--- 6. Historial de Cambios
+-- 6. Historial de recomendaciones IA
+CREATE TABLE IF NOT EXISTS ai_reajuste_history (
+  id SERIAL PRIMARY KEY,
+  plan_id INTEGER NOT NULL REFERENCES economic_plans(id) ON DELETE CASCADE,
+  requested_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  model_name VARCHAR(80) NOT NULL,
+  context JSONB,
+  recommendation TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 7. Historial de Cambios
 CREATE TABLE IF NOT EXISTS plan_audit_log (
   id SERIAL PRIMARY KEY,
   plan_id INTEGER NOT NULL REFERENCES economic_plans(id) ON DELETE CASCADE,
@@ -87,7 +119,7 @@ CREATE TABLE IF NOT EXISTS plan_audit_log (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 7. Indicadores Económicos
+-- 8. Indicadores Económicos
 CREATE TABLE IF NOT EXISTS economic_indicators (
   id SERIAL PRIMARY KEY,
   name VARCHAR(100) NOT NULL,
@@ -101,10 +133,14 @@ CREATE TABLE IF NOT EXISTS economic_indicators (
 CREATE INDEX IF NOT EXISTS idx_users_division ON users(division_id);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_economic_plans_division ON economic_plans(division_id);
+CREATE INDEX IF NOT EXISTS idx_economic_plans_master_plan ON economic_plans(master_plan_id);
 CREATE INDEX IF NOT EXISTS idx_economic_plans_year ON economic_plans(year);
 CREATE INDEX IF NOT EXISTS idx_economic_plans_created_by ON economic_plans(created_by);
+CREATE INDEX IF NOT EXISTS idx_master_plans_year ON master_plans(year);
+CREATE INDEX IF NOT EXISTS idx_master_plan_sheets_plan ON master_plan_sheets(master_plan_id);
 CREATE INDEX IF NOT EXISTS idx_plan_sheets_plan ON plan_sheets(plan_id);
 CREATE INDEX IF NOT EXISTS idx_formula_cells_sheet ON formula_cells(sheet_id);
+CREATE INDEX IF NOT EXISTS idx_ai_reajuste_history_plan ON ai_reajuste_history(plan_id);
 CREATE INDEX IF NOT EXISTS idx_plan_audit_log_plan ON plan_audit_log(plan_id);
 CREATE INDEX IF NOT EXISTS idx_plan_audit_log_user ON plan_audit_log(user_id);
 CREATE INDEX IF NOT EXISTS idx_economic_indicators_code ON economic_indicators(code);

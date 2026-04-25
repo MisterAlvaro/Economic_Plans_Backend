@@ -8,6 +8,6 @@ export class RevokedToken {
   @Column()
   token!: string;
 
-  @Column({ type: 'timestamptz' })
+  @Column({ name: 'expires_at', type: 'timestamptz' })
   expiresAt!: Date;
 } 

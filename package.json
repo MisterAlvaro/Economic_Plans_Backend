@@ -7,6 +7,8 @@
     "dev": "nodemon src/index.ts",
     "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1",
+    "db:reset": "ts-node src/resetDatabase.ts",
+    "seed:test": "ts-node src/seed/seedTestData.ts",
     "migration:generate": "typeorm migration:generate src/migration/",
     "migration:run": "typeorm migration:run -d src/data-source-cli.ts",
     "migration:revert": "typeorm migration:revert -d src/data-source-cli.ts",

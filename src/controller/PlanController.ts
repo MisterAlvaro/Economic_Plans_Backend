@@ -3,40 +3,64 @@ import { Request, Response } from 'express';
 import { AppDataSource } from '../data-source';
 import { EconomicPlan } from '../entity/EconomicPlans';
 import { Division } from '../entity/Division';
+import { MasterPlan } from '../entity/MasterPlan';
 import { User } from '../entity/User';
 import { ExcelProcessor } from '../services/ExcelProcessor';
+import { AuthenticatedRequest } from '../middleware/authMiddleware';
 
-interface FileUploadRequest extends Request {
+interface FileUploadRequest extends AuthenticatedRequest {
   file?: Express.Multer.File & { buffer?: Buffer };
 }
 
 export class PlanController {
-  static async getAll(req: Request, res: Response) {
+  static async getAll(req: AuthenticatedRequest, res: Response) {
+    const role = req.user?.role;
+    const divisionId = req.user?.divisionId;
+
+    const whereClause = role === 'economist' && divisionId
+      ? { division: { id: Number(divisionId) } }
+      : {};
+
     const plans = await AppDataSource.getRepository(EconomicPlan).find({
-      relations: ['division', 'created_by', 'reviewed_by', 'approved_by'],
+      where: whereClause,
+      relations: ['division', 'master_plan', 'created_by', 'reviewed_by', 'approved_by'],
       order: { year: 'DESC' }
     });
     return res.json(plans);
   }
 
-  static async getById(req: Request, res: Response) {
+  static async getById(req: AuthenticatedRequest, res: Response) {
     const { id } = req.params;
+    const role = req.user?.role;
+    const divisionId = req.user?.divisionId;
+
     const plan = await AppDataSource.getRepository(EconomicPlan).findOne({
       where: { id: parseInt(id) },
-      relations: ['division', 'created_by', 'reviewed_by', 'approved_by', 'sheets']
+      relations: ['division', 'master_plan', 'created_by', 'reviewed_by', 'approved_by', 'sheets']
     });
     if (!plan) return res.status(404).json({ message: 'Plan not found' });
+
+    if (role === 'economist' && Number(plan.division?.id) !== Number(divisionId)) {
+      return res.status(403).json({ message: 'Insufficient permissions for this division plan' });
+    }
+
     return res.json(plan);
   }
 
-  static async create(req: Request, res: Response) {
-    const { divisionId, year, createdBy } = req.body;
+  static async create(req: AuthenticatedRequest, res: Response) {
+    const { divisionId, year, masterPlanId } = req.body;
+    const createdBy = req.user?.id;
 
     const division = await AppDataSource.getRepository(Division).findOneBy({ id: divisionId });
+    const masterPlan = await AppDataSource.getRepository(MasterPlan).findOneBy({ id: masterPlanId });
     const user = await AppDataSource.getRepository(User).findOneBy({ id: createdBy });
 
-    if (!division || !user) {
-      return res.status(400).json({ message: 'Invalid division or user' });
+    if (!division || !user || !masterPlan) {
+      return res.status(400).json({ message: 'Invalid division, master plan or user' });
+    }
+
+    if (Number(masterPlan.year) !== Number(year)) {
+      return res.status(400).json({ message: 'Plan year must match selected master plan year' });
     }
 
     const existing = await AppDataSource.getRepository(EconomicPlan).findOneBy({ division: { id: divisionId }, year });
@@ -46,6 +70,7 @@ export class PlanController {
 
     const plan = AppDataSource.getRepository(EconomicPlan).create({
       division,
+      master_plan: masterPlan,
       year,
       created_by: user,
       version: 1,
@@ -59,6 +84,8 @@ export class PlanController {
   static async uploadExcel(req: FileUploadRequest, res: Response) {
     const { id } = req.params;
     const planId = parseInt(id);
+    const role = req.user?.role;
+    const divisionId = req.user?.divisionId;
 
     if (!req.file) {
       return res.status(400).json({ message: 'No file uploaded' });
@@ -66,9 +93,13 @@ export class PlanController {
 
     // Verificar que el plan existe
     const planRepo = AppDataSource.getRepository(EconomicPlan);
-    const plan = await planRepo.findOneBy({ id: planId });
+    const plan = await planRepo.findOne({ where: { id: planId }, relations: ['division'] });
     if (!plan) {
       return res.status(404).json({ message: 'Plan not found' });
+    }
+
+    if (role === 'economist' && Number(plan.division?.id) !== Number(divisionId)) {
+      return res.status(403).json({ message: 'Insufficient permissions for this division plan' });
     }
 
     try {
@@ -76,12 +107,12 @@ export class PlanController {
       if (!fileBuffer || !fileBuffer.length) {
         return res.status(400).json({ message: 'No file uploaded or empty file' });
       }
-      await ExcelProcessor.process(fileBuffer, planId);
+      const sheetsProcessed = await ExcelProcessor.process(fileBuffer, planId);
       
       res.json({ 
         message: 'Excel processed successfully',
         planId,
-        sheetsProcessed: true
+        sheetsProcessed
       });
     } catch (error) {
       console.error('Error processing Excel:', error);

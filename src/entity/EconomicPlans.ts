@@ -3,6 +3,7 @@ import {
     CreateDateColumn, UpdateDateColumn, JoinColumn
   } from 'typeorm';
   import { Division } from './Division';
+  import { MasterPlan } from './MasterPlan';
   import { User } from './User';
   import { PlanSheet } from './PlanSheets';
   
@@ -14,6 +15,10 @@ import {
       @ManyToOne(() => Division, division => division.plans, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'division_id' })
   division!: Division;
+
+        @ManyToOne(() => MasterPlan, masterPlan => masterPlan.division_plans, { onDelete: 'RESTRICT' })
+      @JoinColumn({ name: 'master_plan_id' })
+      master_plan!: MasterPlan;
   
     @Column()
     year!: number;

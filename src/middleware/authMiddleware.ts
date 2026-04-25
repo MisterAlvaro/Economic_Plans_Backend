@@ -7,7 +7,7 @@ import { RevokedToken } from '../entity/RevokedToken';
 const JWT_SECRET = process.env.JWT_SECRET || 'secretkey';
 
 // Extend Request interface to include user property
-interface AuthenticatedRequest extends Request {
+export interface AuthenticatedRequest extends Request {
   user?: any;
 }
 
@@ -28,3 +28,15 @@ export async function authenticateJWT(req: AuthenticatedRequest, res: Response, 
     return res.status(403).json({ message: 'Invalid or expired token' });
   }
 } 
+
+export function authorizeRoles(...allowedRoles: Array<'admin' | 'economist'>) {
+  return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    const role = req.user?.role;
+
+    if (!role || !allowedRoles.includes(role)) {
+      return res.status(403).json({ message: 'Insufficient permissions' });
+    }
+
+    next();
+  };
+}

@@ -19,9 +19,16 @@ export class AuthController {
     const passwordValid = await bcrypt.compare(password, user.passwordHash);
     if (!passwordValid) return res.status(401).json({ message: 'Invalid credentials' });
 
-    const payload = { id: user.id, email: user.email, role: user.role, divisionId: user.division.id };
+    const payload = {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      divisionId: user.division?.id ?? null,
+    };
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '8h' });
     const refreshToken = jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
+
+    const { passwordHash, ...safeUser } = user as any;
 
     res
       .cookie('token', token, {
@@ -30,7 +37,7 @@ export class AuthController {
         sameSite: 'strict',
         maxAge: 8 * 60 * 60 * 1000
       })
-      .json({ refreshToken, user });
+        .json({ refreshToken, user: safeUser });
   }
 
   static async refresh(req: Request, res: Response) {

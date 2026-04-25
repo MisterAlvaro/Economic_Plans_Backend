@@ -59,6 +59,8 @@ export class ExcelProcessor {
         }
       }
     }
+
+    return workbook.SheetNames.length;
   }
 
   private static async extractEconomicIndicators(workbook: XLSX.WorkBook, indicatorRepo: any) {

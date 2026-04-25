@@ -23,7 +23,7 @@ import {
   division!: Division;
   
     @Column()
-    role!: 'admin' | 'economist' | 'reviewer';
+    role!: 'admin' | 'economist';
   
     @Column({ default: true })
     is_active!: boolean;

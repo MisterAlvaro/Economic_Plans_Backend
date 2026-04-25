@@ -2,10 +2,13 @@ import 'reflect-metadata';
 import { DataSource } from 'typeorm';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
+import { AIReajusteHistory } from './entity/AIReajusteHistory';
 import { Division } from './entity/Division';
 import { EconomicIndicator } from './entity/EconomicIndicator';
 import { EconomicPlan } from './entity/EconomicPlans';
 import { FormulaCell } from './entity/FormulaCell';
+import { MasterPlan } from './entity/MasterPlan';
+import { MasterPlanSheet } from './entity/MasterPlanSheet';
 import { PlanAuditLog } from './entity/PlanAuditLog';
 import { PlanSheet } from './entity/PlanSheets';
 import { RevokedToken } from './entity/RevokedToken';
@@ -26,10 +29,13 @@ try {
 
 // Entidades explícitas (evita fallos de glob en Vercel/serverless)
 const entities = [
+  AIReajusteHistory,
   Division,
   EconomicIndicator,
   EconomicPlan,
   FormulaCell,
+  MasterPlan,
+  MasterPlanSheet,
   PlanAuditLog,
   PlanSheet,
   RevokedToken,
